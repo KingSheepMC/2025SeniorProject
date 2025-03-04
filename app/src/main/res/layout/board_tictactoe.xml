@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:columnCount="3"
+    android:rowCount="3"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <Button android:id="@+id/btnCell1" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell2" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell3" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell4" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell5" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell6" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell7" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell8" style="@style/TicTacToeButton"/>
+    <Button android:id="@+id/btnCell9" style="@style/TicTacToeButton"/>
+
+</GridLayout>

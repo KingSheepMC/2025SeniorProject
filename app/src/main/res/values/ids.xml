@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="lobbyStatusText" type="id" />
+    <item name="loadingIcon" type="id" />
+    <item name="lobbyJoinText" type="id" />
+    <item name="lobbyIdText" type="id" />
+</resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:title="Multiplayer Game App" />
+
+    <!-- Welcome Message -->
+    <TextView
+        android:id="@+id/tvWelcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome, User!"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"/>
+
+    <!-- Play Tic-Tac-Toe Button -->
+    <Button
+        android:id="@+id/btnTicTacToe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Tic-Tac-Toe"
+        android:onClick="startTicTacToe"/>
+
+    <!-- Play Checkers Button -->
+    <Button
+        android:id="@+id/btnCheckers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Checkers"
+        android:onClick="startCheckers"
+        android:layout_marginTop="10dp"/>
+</LinearLayout>

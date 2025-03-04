@@ -1,0 +1,64 @@
+<!-- activity_lobby.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <!-- Back Button at the top -->
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_back"
+        android:contentDescription="Back"
+        android:layout_gravity="start" />
+
+    <!-- Loading and status text -->
+    <TextView
+        android:id="@+id/lobbyStatusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Successfully created a lobby!"
+        android:textSize="18sp"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:textAlignment="center"/>
+
+    <!-- Loading Icon -->
+    <ProgressBar
+        android:id="@+id/loadingIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:layout_marginTop="20dp"/>
+
+    <!-- Text for further instructions -->
+    <TextView
+        android:id="@+id/lobbyJoinText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please wait for someone to join"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginTop="20dp"/>
+
+    <!-- Display Lobby ID -->
+    <TextView
+        android:id="@+id/lobbyIdText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your lobby ID is: "
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginTop="10dp"/>
+
+    <Button
+        android:id="@+id/joinLobbyButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Simulate User Joining"
+        android:layout_marginTop="20dp"
+        android:layout_gravity="center" />
+</LinearLayout>

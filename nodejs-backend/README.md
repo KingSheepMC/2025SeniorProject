@@ -1,0 +1,1 @@
+Jacobs, H. A. (2001). Incidents in the life of a slave girl. Dover Publications.
