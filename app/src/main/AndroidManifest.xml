@@ -33,6 +33,9 @@
         <activity android:name=".activities.LoginActivity" android:exported="false"/>
         <activity android:name=".activities.RegisterActivity" android:exported="false"/>
         <activity android:name=".activities.LobbyActivity" android:exported="false"/>
+        <activity android:name=".activities.TicTacToeActivity" android:exported="false"/>
+        <activity android:name=".activities.CheckersActivity" android:exported="false"/>
+        <activity android:name=".activities.ChessActivity" android:exported="false"/>
 
         <!-- Network Permissions -->
 

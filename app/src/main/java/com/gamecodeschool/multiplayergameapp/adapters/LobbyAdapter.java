@@ -36,6 +36,7 @@ public class LobbyAdapter extends RecyclerView.Adapter<LobbyAdapter.LobbyViewHol
     private Context context;
     private SharedPrefManager prefManager;
     private ApiService apiService;
+    private String gameType;
 
     public LobbyAdapter(List<Lobby> lobbies) {
         this.lobbies = lobbies;
@@ -52,7 +53,8 @@ public class LobbyAdapter extends RecyclerView.Adapter<LobbyAdapter.LobbyViewHol
     @Override
     public void onBindViewHolder(LobbyViewHolder holder, int position) {
         Lobby lobby = lobbies.get(position);
-        holder.lobbyInfoTextView.setText("Game Type: " + lobby.getGameType() + "\nPlayer 1: " + lobby.getPlayer1Username() + "\nLobby ID: " + lobby.getLobbyId());
+        gameType = lobby.getGameType();
+        holder.lobbyInfoTextView.setText("Opponent: " + lobby.getPlayer1Username() + "\n\nLobby ID: " + lobby.getLobbyId());
 
         // Handle Join Button Click
         holder.joinButton.setOnClickListener(v -> {
@@ -85,21 +87,60 @@ public class LobbyAdapter extends RecyclerView.Adapter<LobbyAdapter.LobbyViewHol
                 if (response.isSuccessful()) {
                     Intent intent = new Intent(context, LobbyActivity.class);
                     intent.putExtra("LOBBY_ID", lobbyId);
+                    intent.putExtra("GAME_TYPE", gameType);
                     context.startActivity(intent);
                     if (context instanceof Activity) {
                         ((Activity) context).finish();
                     }
                 } else {
-                    Toast.makeText(context, "Failed to join lobby", Toast.LENGTH_SHORT).show();
+                    showErrorDialog(response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                showErrorDialog(-1);
             }
         });
     }
+
+    private void showErrorDialog(int errorCode) {
+        String errorMessage;
+
+        switch (errorCode) {
+            case 400:
+                errorMessage = "Bad Request: Invalid data sent to the server.";
+                break;
+            case 401:
+                errorMessage = "Unauthorized: You need to log in again.";
+                break;
+            case 403:
+                errorMessage = "Forbidden: You are not allowed to join this lobby.";
+                break;
+            case 404:
+                errorMessage = "Lobby Not Found: The lobby you are trying to join does not exist.";
+                break;
+            case 409:
+                errorMessage = "Conflict: This lobby is already full.";
+                break;
+            case 500:
+                errorMessage = "Server Error: Something went wrong on our end.";
+                break;
+            case -1:
+                errorMessage = "Network Error: Please check your internet connection.";
+                break;
+            default:
+                errorMessage = "Unknown Error: Please try again later. (Code: " + errorCode + ")";
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle("Failed to Join Lobby")
+                .setMessage(errorMessage)
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+
     public static class LobbyViewHolder extends RecyclerView.ViewHolder {
         TextView lobbyInfoTextView;
         Button joinButton;

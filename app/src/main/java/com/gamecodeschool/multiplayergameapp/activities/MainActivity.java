@@ -1,5 +1,7 @@
 package com.gamecodeschool.multiplayergameapp.activities;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -75,10 +77,27 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_logout) {
-            logout();
+            showLogoutDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showLogoutDialog() {
+        // Create a confirmation dialog
+        new AlertDialog.Builder(this)
+                .setTitle("Hold the Phone!")
+                .setMessage("Are you sure you want to logout?")
+                .setCancelable(false) // Can't dismiss dialog by tapping outside
+                .setPositiveButton("Yes please!", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        // Call your logout function here
+                        logout();
+                    }
+                })
+                .setNegativeButton("No, nevermind!", null) // Dismiss the dialog on "No"
+                .show();
     }
 
     // Logout function
@@ -105,6 +124,13 @@ public class MainActivity extends AppCompatActivity {
         // Logic to start Checkers
         Intent intent = new Intent(MainActivity.this, GameActivity.class);
         intent.putExtra("GAME_TYPE", "Checkers");
+        startActivity(intent);
+    }
+
+    public void startChess(View view) {
+        // Logic to start Chess
+        Intent intent = new Intent(MainActivity.this, GameActivity.class);
+        intent.putExtra("GAME_TYPE", "Chess");
         startActivity(intent);
     }
 }

@@ -1,30 +1,47 @@
-<!-- activity_lobby.xml -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white">
 
-    <!-- Back Button at the top -->
-    <ImageButton
-        android:id="@+id/backButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_back"
-        android:contentDescription="Back"
-        android:layout_gravity="start" />
-
-    <!-- Loading and status text -->
+    <!-- Lobby Status Text -->
     <TextView
         android:id="@+id/lobbyStatusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Successfully created a lobby!"
         android:textSize="18sp"
-        android:layout_marginTop="30dp"
         android:gravity="center"
-        android:textAlignment="center"/>
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/arcade"/>
+
+    <!-- Playing As (Username) -->
+    <TextView
+        android:id="@+id/playingAsText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Playing as [username]"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:textColor="@color/black"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/arcade"/>
+
+    <!-- Game Type -->
+    <TextView
+        android:id="@+id/gameTypeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Playing [gametype]"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:textColor="@color/black"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/arcade"/>
 
     <!-- Loading Icon -->
     <ProgressBar
@@ -34,7 +51,7 @@
         android:visibility="visible"
         android:layout_marginTop="20dp"/>
 
-    <!-- Text for further instructions -->
+    <!-- Lobby Join Text -->
     <TextView
         android:id="@+id/lobbyJoinText"
         android:layout_width="wrap_content"
@@ -42,7 +59,9 @@
         android:text="Please wait for someone to join"
         android:textSize="16sp"
         android:gravity="center"
-        android:layout_marginTop="20dp"/>
+        android:textColor="@color/gray"
+        android:layout_marginTop="20dp"
+        android:fontFamily="@font/arcade"/>
 
     <!-- Display Lobby ID -->
     <TextView
@@ -52,13 +71,36 @@
         android:text="Your lobby ID is: "
         android:textSize="16sp"
         android:gravity="center"
-        android:layout_marginTop="10dp"/>
+        android:textColor="@color/black"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/arcade"/>
 
+    <!-- Simulate Join Button -->
     <Button
         android:id="@+id/joinLobbyButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Simulate User Joining"
         android:layout_marginTop="20dp"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:textColor="@android:color/white"
+        android:fontFamily="@font/arcade"/>
+
+    <!-- Spacer to push Cancel Button to the bottom -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <!-- Cancel Button at the bottom -->
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel Lobby"
+        android:layout_gravity="center"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="20dp"
+        android:fontFamily="@font/arcade"/>
+
 </LinearLayout>

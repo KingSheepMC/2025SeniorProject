@@ -28,12 +28,22 @@
         android:layout_marginTop="20dp"
         android:layout_marginBottom="20dp"/>
 
+    <!-- Multiplayer Games Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Multiplayer Games (Internet Required)"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"/>
+
     <!-- Play Tic-Tac-Toe Button -->
     <Button
         android:id="@+id/btnTicTacToe"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Play Tic-Tac-Toe"
+        android:text="Play Tic-Tac-Toe (ready)"
         android:onClick="startTicTacToe"/>
 
     <!-- Play Checkers Button -->
@@ -41,7 +51,36 @@
         android:id="@+id/btnCheckers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Play Checkers"
+        android:text="Play Checkers (ready)"
         android:onClick="startCheckers"
         android:layout_marginTop="10dp"/>
+
+    <!-- Play Chess Button -->
+    <Button
+        android:id="@+id/btnCheess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Chess (in progress)"
+        android:onClick="startChess"
+        android:layout_marginTop="10dp"/>
+
+    <!-- Single Player Games Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Single Player Games (Internet Free)"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Play Minesweeper Button -->
+    <Button
+        android:id="@+id/btnMinesweeper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Minesweeper (It's broken)"
+        android:onClick="startMinesweeper"
+        android:layout_marginTop="10dp"/>
+
 </LinearLayout>

@@ -1,5 +1,7 @@
 package com.gamecodeschool.multiplayergameapp.network;
 
+import android.app.GameState;
+
 import com.gamecodeschool.multiplayergameapp.models.Lobby;
 import com.gamecodeschool.multiplayergameapp.models.LobbyResponse;
 import com.gamecodeschool.multiplayergameapp.models.ResponseBody;
@@ -50,6 +52,12 @@ public interface ApiService {
     );
 
     @FormUrlEncoded
+    @POST("/delete-user-lobbies")
+    Call<Void> deleteUserLobbies(
+            @Field("username") String username
+    );
+
+    @FormUrlEncoded
     @POST("/lobby/join")
     Call<ResponseBody> joinLobby(
             @Field("lobbyId") int lobbyId,
@@ -59,5 +67,29 @@ public interface ApiService {
     @GET("/get-username-by-id")
     Call<String> getUserIdToUsername(
             @Query("userId") int userId
+    );
+
+    @GET("/send-tictactoe-move")
+            Call<Void> sendTicTacToeMove(
+            @Query("lobbyId") int lobbyId,
+            @Query("row") int row,
+            @Query("col") int col,
+            @Query("username") String myUsername
+    );
+
+    @GET("/get-game-state")
+    Call<Lobby> getGameState(
+            @Query("lobbyId") int lobbyId,
+            @Query("username") String myUsername
+    );
+
+    @GET("/send-checkers-move")
+    Call<Void> sendCheckersMove(
+            @Query("lobbyId") int lobbyId,
+            @Query("fromRow") int fromRow,
+            @Query("fromCol") int fromCol,
+            @Query("toRow") int toRow,
+            @Query("toCol") int toCol,
+            @Query("username") String myUsername
     );
 }

@@ -30,11 +30,11 @@ import java.util.ArrayList; // Import ArrayList
 
 public class GameActivity extends AppCompatActivity {
     private String gameType;
-    private GridLayout ticTacToeBoard, checkersBoard;
     private SharedPrefManager prefManager;
     private ApiService apiService;
     private Handler handler;
     private Runnable lobbyUpdaterRunnable;
+    private TextView noLobbiesText, fetchingLobbiesText, failedFetchLobbiesText;
     private RecyclerView lobbyRecyclerView;
     private LobbyAdapter lobbyAdapter;
 
@@ -49,14 +49,15 @@ public class GameActivity extends AppCompatActivity {
 
         // Get username from SharedPreferences
         String username = prefManager.getUsername();
-        Toast.makeText(this, "Welcome " + username, Toast.LENGTH_SHORT).show();
 
         // Initialize UI Elements
-        ticTacToeBoard = findViewById(R.id.ticTacToeBoard);
-        checkersBoard = findViewById(R.id.checkersBoard);
         TextView gameTypeHeading = findViewById(R.id.gameTypeHeading);
-        TextView noLobbiesText = findViewById(R.id.noLobbiesText);
         ImageButton backButton = findViewById(R.id.backButton);
+        ImageButton refreshButton = findViewById(R.id.refreshButton);
+
+        refreshButton.setOnClickListener(v -> {
+            fetchLobbies();
+        });
 
         // Get the game type from the Intent
         gameType = getIntent().getStringExtra("GAME_TYPE");
@@ -64,19 +65,6 @@ public class GameActivity extends AppCompatActivity {
 
         // Handle Back Button
         backButton.setOnClickListener(v -> finish());
-
-        // Show the appropriate game board
-        if (gameType != null && gameType.equals("TicTacToe")) {
-            ticTacToeBoard.setVisibility(View.VISIBLE);
-            checkersBoard.setVisibility(View.GONE);
-            Toast.makeText(this, "Tic Tac Toe Game Selected!", Toast.LENGTH_SHORT).show();
-        } else if (gameType != null && gameType.equals("Checkers")) {
-            ticTacToeBoard.setVisibility(View.GONE);
-            checkersBoard.setVisibility(View.VISIBLE);
-        } else {
-            Toast.makeText(this, "Invalid game type!", Toast.LENGTH_SHORT).show();
-            finish();
-        }
 
         // Initialize RecyclerView for lobbies
         lobbyRecyclerView = findViewById(R.id.lobbyRecyclerView);
@@ -86,25 +74,66 @@ public class GameActivity extends AppCompatActivity {
 
         // Fetch available lobbies
         fetchLobbies();
+        deleteUserLobbies(username);
 
         // Create Lobby button click listener
         findViewById(R.id.createLobbyButton).setOnClickListener(v -> createLobby());
 
     }
 
-    private void fetchLobbies() {
-        Call<LobbyResponse> call = apiService.getAvailableLobbies();
+    private void deleteUserLobbies(String username) {
+        // Send a request to the server to delete all lobbies the user is in
+        Call<Void> call = apiService.deleteUserLobbies(username);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Log.d("LobbyActivity", "User lobbies deleted successfully");
+                } else {
+                    Log.e("LobbyActivity", "Failed to delete user lobbies");
+                }
+            }
 
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(GameActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchLobbies() {
+        TextView noLobbiesText = findViewById(R.id.noLobbiesText);
+        TextView fetchingLobbiesText = findViewById(R.id.fetchingLobbiesText);
+        TextView failedFetchLobbiesText = findViewById(R.id.failedFetchLobbiesText);
+        noLobbiesText.setVisibility(View.GONE);
+        lobbyRecyclerView.setVisibility(View.GONE);
+        failedFetchLobbiesText.setVisibility(View.GONE);
+        fetchingLobbiesText.setVisibility(View.VISIBLE);
+        Call<LobbyResponse> call = apiService.getAvailableLobbies();
         call.enqueue(new Callback<LobbyResponse>() {
             @Override
             public void onResponse(Call<LobbyResponse> call, Response<LobbyResponse> response) {
-                if (response.isSuccessful()) {
-                    LobbyResponse lobbyResponse = response.body();
-                    List<Lobby> lobbies = lobbyResponse.getLobbies();
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Lobby> allLobbies = response.body().getLobbies();
 
-                    // Now, use the lobbies list to update your UI
-                    // For example, populate a RecyclerView with the lobbies
-                    lobbyAdapter.setLobbies(lobbies);
+                    // Filter lobbies by gameType
+                    List<Lobby> filteredLobbies = new ArrayList<>();
+                    for (Lobby lobby : allLobbies) {
+                        if (lobby.getGameType().equalsIgnoreCase(gameType)) {
+                            filteredLobbies.add(lobby);
+                        }
+                    }
+                    fetchingLobbiesText.setVisibility(View.GONE);
+                    if (filteredLobbies.isEmpty()) {
+                        // Show "No lobbies found" message
+                        noLobbiesText.setVisibility(View.VISIBLE);
+                        lobbyRecyclerView.setVisibility(View.GONE);
+                    } else {
+                        // Update adapter with filtered lobbies
+                        lobbyRecyclerView.setVisibility(View.VISIBLE);
+                        noLobbiesText.setVisibility(View.GONE);
+                        lobbyAdapter.setLobbies(filteredLobbies);
+                    }
                 } else {
                     Toast.makeText(GameActivity.this, "Failed to fetch lobbies. Code: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
@@ -112,6 +141,8 @@ public class GameActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<LobbyResponse> call, Throwable t) {
+                failedFetchLobbiesText.setVisibility(View.VISIBLE);
+                fetchingLobbiesText.setVisibility(View.GONE);
                 Toast.makeText(GameActivity.this, "Error fetching lobbies: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 t.printStackTrace();
             }
@@ -129,16 +160,51 @@ public class GameActivity extends AppCompatActivity {
                     // Successfully created the lobby, now fetch its details
                     getLobbyDetails(username);
                 } else {
-                    Toast.makeText(GameActivity.this, "Failed to create lobby. Code: " + response.code(), Toast.LENGTH_SHORT).show();
+                    showErrorDialog(response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(GameActivity.this, "Error creating lobby: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                t.printStackTrace();
+                showErrorDialog(-1);
             }
         });
+    }
+
+    private void showErrorDialog(int errorCode) {
+        String errorMessage;
+
+        switch (errorCode) {
+            case 400:
+                errorMessage = "Bad Request: Invalid data sent to the server.";
+                break;
+            case 401:
+                errorMessage = "Unauthorized: You need to log in again.";
+                break;
+            case 403:
+                errorMessage = "Forbidden: You are not allowed to create this lobby.";
+                break;
+            case 404:
+                errorMessage = "Lobby Not Found: The lobby you are trying to join does not exist.";
+                break;
+            case 409:
+                errorMessage = "Conflict: This lobby is already full.";
+                break;
+            case 500:
+                errorMessage = "Server Error: Something went wrong on our end.";
+                break;
+            case -1:
+                errorMessage = "Network Error: Please check your internet connection.";
+                break;
+            default:
+                errorMessage = "Unknown Error: Please try again later. (Code: " + errorCode + ")";
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Failed to Create Lobby")
+                .setMessage(errorMessage)
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     private void getLobbyDetails(String username) {

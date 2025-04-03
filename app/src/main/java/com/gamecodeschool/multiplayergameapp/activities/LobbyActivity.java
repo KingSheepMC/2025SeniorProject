@@ -1,5 +1,6 @@
 package com.gamecodeschool.multiplayergameapp.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -9,6 +10,8 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.gamecodeschool.multiplayergameapp.R;
@@ -17,8 +20,6 @@ import com.gamecodeschool.multiplayergameapp.models.ResponseBody;
 import com.gamecodeschool.multiplayergameapp.network.ApiService;
 import com.gamecodeschool.multiplayergameapp.network.RetrofitClient;
 import com.gamecodeschool.multiplayergameapp.utils.SharedPrefManager;
-
-import org.w3c.dom.Text;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -29,16 +30,30 @@ public class LobbyActivity extends AppCompatActivity {
     private SharedPrefManager prefManager;
     private ApiService apiService;
     private int lobbyId;
+    private String gameType;
     private TextView lobbyStatusText, lobbyJoinText, lobbyIdText;
     private ProgressBar loadingIcon;
-    private ImageButton backButton;
+    private Button backButton;
     private Button joinLobbyButton;
+    private boolean intentDone = false;
     private Handler handler = new Handler();
     private Runnable updateLobbyRunnable;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            public void handleOnBackPressed() {
+                new androidx.appcompat.app.AlertDialog.Builder(LobbyActivity.this)
+                        .setTitle("Leave Game?")
+                        .setMessage("If you leave now, your progress will be lost. Are you sure?")
+                        .setPositiveButton("Exit", (dialog, which) -> deleteLobby()) // Exit
+                        .setNegativeButton("Stay", (dialog, which) -> dialog.dismiss()) // Stay
+                        .setCancelable(false)
+                        .show();
+            }
+        });
 
         // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -55,9 +70,17 @@ public class LobbyActivity extends AppCompatActivity {
         backButton = findViewById(R.id.backButton);
         joinLobbyButton = findViewById(R.id.joinLobbyButton);
 
+        TextView playingAsText = findViewById(R.id.playingAsText);
+        TextView gameTypeText = findViewById(R.id.gameTypeText);
+
         // Get lobby ID
         lobbyId = getIntent().getIntExtra("LOBBY_ID", 0);
+        gameType = getIntent().getStringExtra("GAME_TYPE");
         lobbyIdText.setText("Your lobby ID is: " + lobbyId);
+
+        // Set dynamic data
+        playingAsText.setText("Playing as " + username);
+        gameTypeText.setText("Playing " + gameType);
 
         // Fetch lobby details
         getLobbyDetails(username);
@@ -118,10 +141,30 @@ public class LobbyActivity extends AppCompatActivity {
             joinLobbyButton.setVisibility(View.GONE); // Hide the "join" button
             backButton.setVisibility(View.GONE); // Hide the back button
         }
+        if (player1Name != null && player2Name != null && !intentDone) {
+            startGame();
+            intentDone = true;
+        }
     }
-    
+
+    private void startGame() {
+        Intent intent;
+        if (gameType.equals("TicTacToe")) {
+            intent = new Intent(LobbyActivity.this, TicTacToeActivity.class);
+        } else if (gameType.equals("Checkers")) {
+            intent = new Intent(LobbyActivity.this, CheckersActivity.class);
+        } else {
+            return;
+        }
+        intent.putExtra("LOBBY_ID", lobbyId);
+        intent.putExtra("PLAYER_USERNAME", prefManager.getUsername());
+        startActivity(intent);
+        finish(); // Close LobbyActivity
+    }
+
     private void showConfirmationDialog() {
         new AlertDialog.Builder(this)
+                .setTitle("Leave Lobby?")
                 .setMessage("Are you sure you want to forfeit? All progress will be lost.")
                 .setCancelable(false)
                 .setPositiveButton("Yes", (dialog, id) -> deleteLobby())
@@ -180,8 +223,20 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        // Remove the callbacks to stop the updates
+        if (updateLobbyRunnable != null) {
+            handler.removeCallbacks(updateLobbyRunnable);
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacks(updateLobbyRunnable); // Stop updates when activity is destroyed
+        // Ensure that we clean up any remaining references
+        if (updateLobbyRunnable != null) {
+            handler.removeCallbacks(updateLobbyRunnable);
+        }
     }
 }
