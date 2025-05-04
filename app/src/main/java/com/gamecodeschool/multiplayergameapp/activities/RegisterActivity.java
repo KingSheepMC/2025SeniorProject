@@ -2,6 +2,7 @@ package com.gamecodeschool.multiplayergameapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -20,7 +21,7 @@ import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
     private EditText usernameEditText, passwordEditText, passwordEditText2;
-    private Button registerButton;
+    private Button registerButton, backButton;
     private ApiService apiService;
     private SharedPrefManager prefManager;
 
@@ -34,6 +35,7 @@ public class RegisterActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.etNewPassword);
         passwordEditText2 = findViewById(R.id.etConfirmPassword);
         registerButton = findViewById(R.id.btnRegister);
+        backButton = findViewById(R.id.btnBackToLogin);
 
         // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -50,6 +52,8 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Please enter username and password", Toast.LENGTH_SHORT).show();
             }
         });
+
+        backButton.setOnClickListener(v -> finish());
     }
 
     private void register(String username, String password, String password2) {
@@ -99,4 +103,5 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
     }
+
 }

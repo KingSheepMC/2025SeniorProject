@@ -7,6 +7,7 @@ const db = require('./db');
 
 const app = express();
 const PORT = 3000;
+const HOST = '0.0.0.0';
 
 // Middleware
 app.use(cors()); // Enable CORS for frontend communication
@@ -198,7 +199,7 @@ app.post('/create-lobby', (req, res) => {
       if (isActive) return res.status(403).json({ error: 'You are already in an active game session' });
 
       db.query(
-        'INSERT INTO game_sessions (game_type, player1_id, player1_username, game_state) VALUES (?, ?, ?, ?)',
+        'INSERT INTO game_sessions (game_type, player1_id, player1_username, game_state, created_at) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
         [gameType, userId, username, initialGameState],
         (err, results) => {
           if (err) {
@@ -274,7 +275,7 @@ function initializeChessBoard() {
 }
 
 app.get('/fetch-lobby-details', (req, res) => {
-  const { username } = req.query; // Get username from the request URL
+  const { username } = req.query;
 
   getUserIdByUsername(username, (err, userId) => {
     if (err) return res.status(500).json({ error: 'Error fetching user ID' });
@@ -282,7 +283,6 @@ app.get('/fetch-lobby-details', (req, res) => {
 
     console.log('User ID:', userId);
 
-    // Step 2: Fetch lobby details where user is player1 or player2
     db.query(
       'SELECT * FROM game_sessions WHERE player1_id = ? OR player2_id = ? LIMIT 1',
       [userId, userId],
@@ -298,48 +298,62 @@ app.get('/fetch-lobby-details', (req, res) => {
 
         console.log('Fetched lobby:', lobbyResults[0].id);
 
-        res.json(lobbyResults[0]);
+        const lobbyId = lobbyResults[0].id;
+
+        // Update user's activity log
+        updateUserActivityLog(userId, lobbyId, (err) => {
+          if (err) {
+            console.error('Error updating user activity log:', err);
+            // Optional: continue even if log fails
+          }
+          res.json(lobbyResults[0]);
+        });
       }
     );
   });
 });
 
+
 app.get('/get-game-state', (req, res) => {
-    const { lobbyId, username } = req.query; // Get lobbyId and username
+  const { lobbyId, username } = req.query;
 
-    if (!lobbyId || !username) {
-        return res.status(400).json({ error: "Missing lobbyId or username" });
-    }
+  if (!lobbyId || !username) {
+    return res.status(400).json({ error: "Missing lobbyId or username" });
+  }
 
-    getUserIdByUsername(username, (err, userId) => {
-        if (err) return res.status(500).json({ error: "Error fetching user ID" });
-        if (!userId) return res.status(404).json({ error: "User not found" });
+  getUserIdByUsername(username, (err, userId) => {
+    if (err) return res.status(500).json({ error: "Error fetching user ID" });
+    if (!userId) return res.status(404).json({ error: "User not found" });
 
-        console.log("User ID:", userId);
+    console.log("User ID:", userId);
 
-        // Step 2: Check if the lobby exists & the user is part of the game
-        db.query(
-            'SELECT * FROM game_sessions WHERE id = ? AND (player1_id = ? OR player2_id = ?) LIMIT 1',
-            [lobbyId, userId, userId],
-            (err, lobbyResults) => {
-                if (err) {
-                    console.error("Database error while fetching lobby:", err);
-                    return res.status(500).json({ error: "Error fetching lobby details" });
-                }
+    db.query(
+      'SELECT * FROM game_sessions WHERE id = ? AND (player1_id = ? OR player2_id = ?) LIMIT 1',
+      [lobbyId, userId, userId],
+      (err, lobbyResults) => {
+        if (err) {
+          console.error("Database error while fetching lobby:", err);
+          return res.status(500).json({ error: "Error fetching lobby details" });
+        }
 
-                if (lobbyResults.length === 0) {
-                    return res.status(404).json({ error: "Lobby not found or user not part of this game" });
-                }
+        if (lobbyResults.length === 0) {
+          return res.status(404).json({ error: "Lobby not found or user not part of this game" });
+        }
 
-                console.log("Fetched lobby:", lobbyResults[0].id);
+        console.log("Fetched lobby:", lobbyResults[0].id);
 
-                // Step 3: Return the full game session details
-                res.json(lobbyResults[0]);
-            }
-        );
-    });
+        // Update user's activity log
+        updateUserActivityLog(userId, lobbyId, (err) => {
+          if (err) {
+            console.error("Error updating user activity log:", err);
+            // Optional: continue even if log fails
+          }
+          res.json(lobbyResults[0]);
+        });
+      }
+    );
+  });
 });
-
 
 app.post('/delete-lobby', (req, res) => {
   const { lobbyId } = req.body;
@@ -410,16 +424,119 @@ app.post('/lobby/join', (req, res) => {
         if (err) return res.status(500).json({ error: 'Error fetching lobby' });
         if (!results || results.length === 0) return res.status(404).json({ error: 'Lobby not available or already full' });
 
-        db.query('UPDATE game_sessions SET player2_id = ?, player2_username = ? WHERE id = ?', [userId, username, lobbyId], (err) => {
+        db.query('UPDATE game_sessions SET player2_id = ?, player2_username = ?, game_status = "in_progress" WHERE id = ?', [userId, username, lobbyId], (err) => {
           if (err) return res.status(500).json({ error: 'Error updating lobby' });
 
-          res.json({ message: 'Successfully joined the lobby', lobbyId });
+          // NEW: Call the reusable function
+          updateUserActivityLog(userId, lobbyId, (err) => {
+            if (err) {
+              return res.status(500).json({ error: 'Error updating user activity log' });
+            }
+
+            res.json({ message: 'Successfully joined the lobby', lobbyId });
+          });
         });
       });
     });
   });
 });
 
+app.post('/lobby/leave', (req, res) => {
+  const { lobbyId, username } = req.body;
+
+  console.log(`[LEAVE] Request received: lobbyId=${lobbyId}, username=${username}`);
+
+  if (!lobbyId || !username) {
+    console.warn('[LEAVE] Missing lobbyId or username in request body');
+    return res.status(400).json({ error: 'Lobby ID and username are required' });
+  }
+
+  db.query('SELECT * FROM game_sessions WHERE id = ?', [lobbyId], (err, results) => {
+    if (err) {
+      console.error('[LEAVE] Error fetching lobby:', err);
+      return res.status(500).json({ error: 'Error fetching lobby' });
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[LEAVE] Lobby not found: ID=${lobbyId}`);
+      return res.status(404).json({ error: 'Lobby not found' });
+    }
+
+    const lobby = results[0];
+    console.log('[LEAVE] Fetched lobby:', lobby);
+
+    let updateQuery = '';
+    let updateParams = [];
+
+    // Check if the user is player1 or player2
+    if (lobby.player1_username === username) {
+      console.log('[LEAVE] Player is player 1. Marking as NULL and setting status=finished.');
+      updateQuery = 'UPDATE game_sessions SET player1_username = NULL, player1_id = NULL, game_status = "finished" WHERE id = ?';
+      updateParams = [lobbyId];
+    } else if (lobby.player2_username === username) {
+      console.log('[LEAVE] Player is player 2. Marking as NULL and setting status=finished.');
+      updateQuery = 'UPDATE game_sessions SET player2_username = NULL, player2_id = NULL, game_status = "finished" WHERE id = ?';
+      updateParams = [lobbyId];
+    } else {
+      console.warn('[LEAVE] Username not part of this lobby');
+      return res.status(400).json({ error: 'Username not part of this lobby' });
+    }
+
+    // Perform the update query
+    db.query(updateQuery, updateParams, (err) => {
+      if (err) {
+        console.error('[LEAVE] Error updating lobby:', err);
+        return res.status(500).json({ error: 'Error updating lobby' });
+      }
+
+      console.log('[LEAVE] Updated lobby successfully');
+
+      // Now, delete the user's activity log
+      const deleteLogQuery = 'DELETE FROM user_activity_logs WHERE user_id = ? AND lobby_id = ?';
+      db.query(deleteLogQuery, [lobby.player1_id === username ? lobby.player1_id : lobby.player2_id, lobbyId], (err) => {
+        if (err) {
+          console.error('[LEAVE] Error deleting user activity log:', err);
+          return res.status(500).json({ error: 'Error deleting user activity log' });
+        }
+
+        console.log('[LEAVE] User activity log deleted successfully');
+
+        // Now fetch the updated lobby to check if it needs to be deleted
+        db.query('SELECT * FROM game_sessions WHERE id = ?', [lobbyId], (err, updatedResults) => {
+          if (err) {
+            console.error('[LEAVE] Error fetching updated lobby:', err);
+            return res.status(500).json({ error: 'Error checking updated lobby' });
+          }
+
+          if (!updatedResults || updatedResults.length === 0) {
+            console.log('[LEAVE] Lobby already deleted by another process');
+            return res.json({ message: 'Left lobby successfully' });
+          }
+
+          const updatedLobby = updatedResults[0];
+          console.log('[LEAVE] Updated lobby state:', updatedLobby);
+
+          // Check if both players have left (null usernames), and delete the lobby if needed
+          if (updatedLobby.player1_username === null && updatedLobby.player2_username === null) {
+            console.log('[LEAVE] Both players are null — deleting lobby...');
+            db.query('DELETE FROM game_sessions WHERE id = ?', [lobbyId], (err) => {
+              if (err) {
+                console.error('[LEAVE] Error deleting empty lobby:', err);
+                return res.status(500).json({ error: 'Error deleting empty lobby' });
+              }
+
+              console.log('[LEAVE] Lobby deleted successfully');
+              return res.json({ message: 'Left lobby successfully and lobby deleted' });
+            });
+          } else {
+            console.log('[LEAVE] Other player still in lobby, not deleting.');
+            return res.json({ message: 'Left lobby successfully' });
+          }
+        });
+      });
+    });
+  });
+});
 
 // Start Game API
 app.post('/start-game', (req, res) => {
@@ -661,32 +778,151 @@ function hasMandatoryJump(board, row, col, playerSymbols, opponentSymbols) {
     return false;
 }
 
-app.post('/log-connection', (req, res) => {
-  const { username } = req.body; // Get user ID and optional lobby ID from the request body
+function updateUserActivityLog(userId, lobbyId, callback) {
+  const now = new Date();  // `nowUTC` is a Date object in local time
+  const nowUTCISOString = now.toUTCString(); // Get the ISO string in UTC format
+  console.log(`Checking activity log for user ${userId} in lobby ${lobbyId} at ${nowUTCISOString}`);
 
-  getUserIdByUsername(username, (err, userId) => {
-    if (err) return res.status(500).json({ error: 'Error fetching user ID' });
-    if (!userId) return res.status(404).json({ error: 'User not found' });
+  // Step 1: Check the current user's activity log
+  const checkUserLogQuery = `
+    SELECT id, timestamp
+    FROM user_activity_logs
+    WHERE user_id = ?
+    LIMIT 1
+  `;
 
-    console.log('User ID:', userId);
+  db.query(checkUserLogQuery, [userId], (err, results) => {
+    if (err) {
+      console.error('Error checking user activity log:', err);
+      return callback(err);
+    }
 
-    // Insert a new log or update the existing log (based on userId)
-    db.query(
-      `INSERT INTO connection_logs (user_id, connected_at)
-       VALUES (?, NOW())
-       ON DUPLICATE KEY UPDATE connected_at = NOW()`,
-      [userId, lobbyId, lobbyId],
-      (err, result) => {
-        if (err) {
-          return res.status(500).json({ error: 'Error logging connection' });
-        }
-        res.status(200).json({ message: 'Connection logged/updated' });
+    if (results.length === 0) {
+      console.log('No log found for this user. Inserting a new log.');
+      return insertNewLog(callback);  // Insert the new log without checking the log again
+    }
+
+    const existingLog = results[0];
+    const existingTimestamp = new Date(existingLog.timestamp); // This is UTC if stored properly
+    const secondsDiff = (now.getTime() - existingTimestamp.getTime()) / 1000;
+
+    console.log(`Current UTC time: ${now.toISOString()}`);
+    console.log(`Existing log timestamp (from DB): ${existingTimestamp.toISOString()}`);
+    console.log(`Difference in seconds: ${secondsDiff}`);
+
+    handleOtherPlayersInLobby(now, lobbyId, (err) => {
+      if (err) return callback(err);
+
+      if (secondsDiff > 10) {
+        console.log('User log is stale. Replacing it with a fresh log.');
+        insertNewLog(callback);
+      } else {
+        console.log('User log is fresh. Updating the log.');
+        updateUserLog(existingLog.id, lobbyId, callback);
       }
-    );
+    });
   });
-});
+
+  // Helper function to insert a new log for the user
+  function insertNewLog(callback) {
+    const insertQuery = `
+      INSERT INTO user_activity_logs (user_id, lobby_id, timestamp)
+      VALUES (?, ?, UTC_TIMESTAMP())
+    `;
+    db.query(insertQuery, [userId, lobbyId], (err) => {
+      if (err) {
+        console.error('Error inserting new activity log:', err);
+        return callback(err);
+      }
+      console.log('New activity log inserted for user.');
+      return callback(null); // Successfully inserted new log, don't call the check again
+    });
+  }
+
+  // Helper function to update the current user's log
+  function updateUserLog(logId, lobbyId, callback) {
+    const updateQuery = `
+      UPDATE user_activity_logs
+      SET timestamp = UTC_TIMESTAMP(), lobby_id = ?
+      WHERE id = ?
+    `;
+    db.query(updateQuery, [lobbyId, logId], (err) => {
+      if (err) {
+        console.error('Error updating activity log timestamp:', err);
+        return callback(err);
+      }
+      console.log(`Updated activity log (ID: ${logId}) with new timestamp and lobby_id.`);
+      return callback(null);
+    });
+  }
+
+  // Helper function to delete the user's log and clean up the lobby
+  function handleOtherPlayersInLobby(now, lobbyId, callback) {
+    const getLobbyPlayersQuery = `SELECT player1_id, player2_id FROM game_sessions WHERE id = ? LIMIT 1`;
+
+    db.query(getLobbyPlayersQuery, [lobbyId], (err, [lobby]) => {
+      if (err || !lobby) return callback(err || null);
+
+      const userIds = [lobby.player1_id, lobby.player2_id].filter(Boolean);
+      if (userIds.length === 0) return callback(null); // No players to check
+
+      const getLogsQuery = `
+        SELECT user_id, timestamp
+        FROM user_activity_logs
+        WHERE user_id IN (?) AND lobby_id = ?
+      `;
+      db.query(getLogsQuery, [userIds, lobbyId], (err, logs) => {
+        if (err) return callback(err);
+
+        const inactiveUsers = logs
+          .filter(log => (now - new Date(log.timestamp)) / 1000 > 10)
+          .map(log => log.user_id);
+
+        if (inactiveUsers.length === 0) return callback(null); // All are active
+
+        const deleteLogsQuery = `
+          DELETE FROM user_activity_logs
+          WHERE user_id IN (?) AND lobby_id = ?
+        `;
+        db.query(deleteLogsQuery, [inactiveUsers, lobbyId], (err) => {
+          if (err) return callback(err);
+
+          const clearPlayersQuery = `
+            UPDATE game_sessions
+            SET
+              player1_id = IF(player1_id IN (?), NULL, player1_id),
+              player1_username = IF(player1_id IS NULL, NULL, player1_username),
+              player2_id = IF(player2_id IN (?), NULL, player2_id),
+              player2_username = IF(player2_id IS NULL, NULL, player2_username)
+            WHERE id = ?
+          `;
+          db.query(clearPlayersQuery, [inactiveUsers, inactiveUsers, lobbyId], (err) => {
+            if (err) return callback(err);
+
+            // Check if lobby should be deleted
+            db.query(getLobbyPlayersQuery, [lobbyId], (err, [lobby]) => {
+              if (err || !lobby) return callback(err || null);
+
+              if (!lobby.player1_id && !lobby.player2_id) {
+                const deleteLobbyQuery = `DELETE FROM game_sessions WHERE id = ?`;
+                return db.query(deleteLobbyQuery, [lobbyId], (err) => {
+                  if (err) return callback(err);
+                  console.log('Lobby deleted due to inactivity.');
+                  return callback(null);
+                });
+              } else {
+                return callback(null);
+              }
+            });
+          });
+        });
+      });
+    });
+  }
+}
+
 
 // ------------------------ SERVER LISTENING ------------------------
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+    console.log(`Server is running at http://${HOST}:${PORT}`);
 });

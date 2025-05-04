@@ -75,17 +75,6 @@
         android:layout_marginTop="10dp"
         android:fontFamily="@font/arcade"/>
 
-    <!-- Simulate Join Button -->
-    <Button
-        android:id="@+id/joinLobbyButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Simulate User Joining"
-        android:layout_marginTop="20dp"
-        android:layout_gravity="center"
-        android:textColor="@android:color/white"
-        android:fontFamily="@font/arcade"/>
-
     <!-- Spacer to push Cancel Button to the bottom -->
     <Space
         android:layout_width="match_parent"

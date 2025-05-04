@@ -30,11 +30,10 @@ public class LobbyActivity extends AppCompatActivity {
     private SharedPrefManager prefManager;
     private ApiService apiService;
     private int lobbyId;
-    private String gameType;
+    private String gameType, username;
     private TextView lobbyStatusText, lobbyJoinText, lobbyIdText;
     private ProgressBar loadingIcon;
     private Button backButton;
-    private Button joinLobbyButton;
     private boolean intentDone = false;
     private Handler handler = new Handler();
     private Runnable updateLobbyRunnable;
@@ -43,24 +42,12 @@ public class LobbyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
 
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            public void handleOnBackPressed() {
-                new androidx.appcompat.app.AlertDialog.Builder(LobbyActivity.this)
-                        .setTitle("Leave Game?")
-                        .setMessage("If you leave now, your progress will be lost. Are you sure?")
-                        .setPositiveButton("Exit", (dialog, which) -> deleteLobby()) // Exit
-                        .setNegativeButton("Stay", (dialog, which) -> dialog.dismiss()) // Stay
-                        .setCancelable(false)
-                        .show();
-            }
-        });
-
         // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(getApplicationContext());
 
         // Get username from SharedPreferences
-        String username = prefManager.getUsername();
+        username = prefManager.getUsername();
 
         // Initialize UI elements
         lobbyStatusText = findViewById(R.id.lobbyStatusText);
@@ -68,7 +55,6 @@ public class LobbyActivity extends AppCompatActivity {
         lobbyIdText = findViewById(R.id.lobbyIdText);
         loadingIcon = findViewById(R.id.loadingIcon);
         backButton = findViewById(R.id.backButton);
-        joinLobbyButton = findViewById(R.id.joinLobbyButton);
 
         TextView playingAsText = findViewById(R.id.playingAsText);
         TextView gameTypeText = findViewById(R.id.gameTypeText);
@@ -88,11 +74,23 @@ public class LobbyActivity extends AppCompatActivity {
         // Set up the back button with a confirmation dialog
         backButton.setOnClickListener(v -> showConfirmationDialog());
 
-        // Simulate a different user joining
-        joinLobbyButton.setOnClickListener(v -> simulateJoin());
-
         // Start periodic lobby update
         startLobbyUpdates(username);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            public void handleOnBackPressed() {
+                new androidx.appcompat.app.AlertDialog.Builder(LobbyActivity.this)
+                        .setTitle("Leave Game?")
+                        .setMessage("If you leave now, your progress will be lost. Are you sure?")
+                        .setPositiveButton("Exit", (dialog, which) -> {
+                            leaveGame();
+                            finish();
+                        }) // Exit
+                        .setNegativeButton("Stay", (dialog, which) -> dialog.dismiss()) // Stay
+                        .setCancelable(false)
+                        .show();
+            }
+        });
     }
 
     private void getLobbyDetails(String username) {
@@ -108,8 +106,28 @@ public class LobbyActivity extends AppCompatActivity {
                     String player2Username = lobby.getPlayer2Username();
 
                     updateLobbyUI(player1Username, player2Username, username);
+
+                    if (player1Username == null) {
+                        lobbyStatusText.setText("Lobby not found!");
+
+                        // Stop handler
+                        if (updateLobbyRunnable != null) {
+                            handler.removeCallbacks(updateLobbyRunnable);
+                        }
+
+                        // Show popup and finish activity
+                        showLobbyNotFoundDialog();
+                    }
                 } else {
                     lobbyStatusText.setText("Lobby not found!");
+
+                    // Stop handler
+                    if (updateLobbyRunnable != null) {
+                        handler.removeCallbacks(updateLobbyRunnable);
+                    }
+
+                    // Show popup and finish activity
+                    showLobbyNotFoundDialog();
                 }
             }
 
@@ -127,7 +145,6 @@ public class LobbyActivity extends AppCompatActivity {
         if (username.equals(player1Name)) {
             // Host's UI: Show waiting for player to join, enable join buttons
             lobbyJoinText.setText("Waiting for player to join...");
-            joinLobbyButton.setVisibility(View.VISIBLE);
             backButton.setVisibility(View.VISIBLE);
             // No player joined yet
             if (player2Name != null) {
@@ -138,7 +155,6 @@ public class LobbyActivity extends AppCompatActivity {
         } else  {
             // Player's UI: Show they have joined, disable join buttons
             lobbyJoinText.setText("You have joined the game!");
-            joinLobbyButton.setVisibility(View.GONE); // Hide the "join" button
             backButton.setVisibility(View.GONE); // Hide the back button
         }
         if (player1Name != null && player2Name != null && !intentDone) {
@@ -167,46 +183,35 @@ public class LobbyActivity extends AppCompatActivity {
                 .setTitle("Leave Lobby?")
                 .setMessage("Are you sure you want to forfeit? All progress will be lost.")
                 .setCancelable(false)
-                .setPositiveButton("Yes", (dialog, id) -> deleteLobby())
+                .setPositiveButton("Yes", (dialog, id) -> {
+                    leaveGame();
+                    finish();
+                })
                 .setNegativeButton("No", null)
                 .show();
     }
 
-    private void deleteLobby() {
-        Call<ResponseBody> call = apiService.deleteLobby(lobbyId);
-        call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(LobbyActivity.this, "Lobby forfeited and deleted", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    Toast.makeText(LobbyActivity.this, "Failed to delete lobby", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(LobbyActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void showLobbyNotFoundDialog() {
+        new AlertDialog.Builder(LobbyActivity.this)
+                .setTitle("Connection Failed!")
+                .setMessage("The lobby may have been deleted or you lost connection.")
+                .setCancelable(false)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    finish(); // Close the activity
+                })
+                .show();
     }
 
-    private void simulateJoin() {
-        Call<ResponseBody> call = apiService.joinLobby(lobbyId, "demo");
-        call.enqueue(new Callback<ResponseBody>() {
+    private void leaveGame() {
+        apiService.leaveLobby(lobbyId, username).enqueue(new Callback<Void>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(LobbyActivity.this, "User joined the lobby!", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(LobbyActivity.this, "Failed to join lobby", Toast.LENGTH_SHORT).show();
-                }
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                Log.d("Checkers", "Left lobby successfully.");
             }
 
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(LobbyActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("Checkers", "Failed to notify server on exit", t);
             }
         });
     }
@@ -220,6 +225,15 @@ public class LobbyActivity extends AppCompatActivity {
             }
         };
         handler.post(updateLobbyRunnable);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Restart the lobby updates when the app is resumed
+        if (updateLobbyRunnable != null) {
+            handler.post(updateLobbyRunnable);
+        }
     }
 
     @Override

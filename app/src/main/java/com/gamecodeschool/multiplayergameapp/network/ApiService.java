@@ -64,6 +64,13 @@ public interface ApiService {
             @Field("username") String username
     );
 
+    @FormUrlEncoded
+    @POST("/lobby/leave")
+    Call<Void> leaveLobby(
+            @Field("lobbyId") int lobbyId,
+            @Field("username") String username
+    );
+
     @GET("/get-username-by-id")
     Call<String> getUserIdToUsername(
             @Query("userId") int userId

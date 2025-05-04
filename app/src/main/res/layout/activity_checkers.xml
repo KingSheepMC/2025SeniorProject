@@ -9,6 +9,26 @@
 
     <!-- Game Status -->
     <TextView
+        android:id="@+id/currentPlayerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Current Turn: null"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="@font/arcade"/>
+
+    <TextView
+        android:id="@+id/playerColorText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your player color is null"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="@font/arcade"/>
+
+    <TextView
         android:id="@+id/gameStatusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -39,13 +59,4 @@
         android:text="Restart Game"
         android:layout_marginTop="20dp"
         android:visibility="gone"/>
-
-    <!-- Switch User Button (For Testing) -->
-    <Button
-        android:id="@+id/switchUserButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Switch User"
-        android:layout_marginTop="20dp"
-        android:fontFamily="@font/arcade"/>
 </LinearLayout>
