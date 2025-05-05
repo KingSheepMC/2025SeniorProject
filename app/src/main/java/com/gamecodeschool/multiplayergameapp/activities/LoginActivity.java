@@ -32,13 +32,11 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize views
         etUsername = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
         loginButton = findViewById(R.id.btnLogin);
         registerButton = findViewById(R.id.btnRegister);
 
-        // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(getApplicationContext());
 
@@ -57,27 +55,20 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login(String username, String password) {
-        // Create registration request model
-        LoginRequest loginRequest = new LoginRequest(username, password);
-
-        // Call Retrofit service to make the registration API request
         Call<ResponseBody> call = apiService.login(username, password);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    // Registration success, store the token
                     prefManager.logout();
                     String token = response.body().getToken();
                     prefManager.saveAuthToken(token);
                     prefManager.saveUsername(username);
 
-                    // Navigate to MainActivity
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
-                    // Show error
                     String errorMessage = "Unknown error!";
                     if (response.code() == 400 || response.code() == 404) {
                         errorMessage = "Username or Password are incorrect!";

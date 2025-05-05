@@ -30,14 +30,12 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // Initialize views
         usernameEditText = findViewById(R.id.etNewUsername);
         passwordEditText = findViewById(R.id.etNewPassword);
         passwordEditText2 = findViewById(R.id.etConfirmPassword);
         registerButton = findViewById(R.id.btnRegister);
         backButton = findViewById(R.id.btnBackToLogin);
 
-        // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(getApplicationContext());
 
@@ -57,27 +55,20 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void register(String username, String password, String password2) {
-        // Create registration request model
-        RegisterRequest registerRequest = new RegisterRequest(username, password);
-
-        // Call Retrofit service to make the registration API request
         Call<ResponseBody> call = apiService.register(username, password, password2);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    // Registration success, store the token
                     prefManager.logout();
                     String token = response.body().getToken();
                     prefManager.saveAuthToken(token);
                     prefManager.saveUsername(username);
 
-                    // Navigate to MainActivity
                     Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
-                    // Show error
                     String errorMessage = "Unknown error!";
                     if (response.code() == 400) {
                         errorMessage = "Username or Password are incorrect!";

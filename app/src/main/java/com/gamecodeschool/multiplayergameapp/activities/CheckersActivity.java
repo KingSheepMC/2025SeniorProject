@@ -23,17 +23,16 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Objects;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class CheckersActivity extends AppCompatActivity {
-
     private TextView playerColorText, statusText, currentPlayerText;
     private GridLayout gameGrid;
-    private Button[][] board = new Button[8][8]; // 8x8 Checkers board
-    //private int[][] cellColors = new int[8][8];
-
+    private Button[][] board = new Button[8][8];
     private String currentPlayer;
     private boolean isHost, isMoveProcessing;
     private String myUsername;
@@ -78,7 +77,7 @@ public class CheckersActivity extends AppCompatActivity {
     }
 
     private void initializeBoard() {
-        gameGrid.removeAllViews(); // Clear previous views
+        gameGrid.removeAllViews();
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
@@ -86,31 +85,29 @@ public class CheckersActivity extends AppCompatActivity {
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = 100;
                 params.height = 100;
-                // Load the custom font
                 Typeface customFont = getResources().getFont(R.font.arcade);
 
-                // Set the custom font to the TextView
                 cell.setTypeface(customFont);
                 cell.setLayoutParams(params);
                 cell.setAllCaps(false);
 
-                if ((i + j) % 2 == 1) { // Dark squares
+                if ((i + j) % 2 == 1) { // These are dark squares
                     if (i < 3) { // Player 1 (Red)
                         cell.setText("r");
                         cell.setBackgroundColor(ContextCompat.getColor(this, R.color.red));
                         cell.setTextColor(ContextCompat.getColor(this, R.color.black));
-                        cell.setEnabled(true); // Allow interaction
+                        cell.setEnabled(true); // Allows interaction
                     } else if (i > 4) { // Player 2 (Black)
                         cell.setText("b");
                         cell.setBackgroundColor(ContextCompat.getColor(this, R.color.black));
                         cell.setTextColor(ContextCompat.getColor(this, R.color.white));
-                        cell.setEnabled(true); // Allow interaction
+                        cell.setEnabled(true); // Allows interaction
                     } else { // Empty squares
                         cell.setText("");
                         cell.setBackgroundColor(ContextCompat.getColor(this, R.color.dark_gray)); // Empty but valid squares
-                        cell.setEnabled(true); // Allow interaction for valid moves
+                        cell.setEnabled(true); // Allows interaction for valid moves
                     }
-                } else { // Light squares
+                } else { // These are light squares
                     cell.setBackgroundColor(ContextCompat.getColor(this, R.color.gray));
                     cell.setEnabled(false); // These are disabled because pieces can't land on them
                 }
@@ -124,10 +121,8 @@ public class CheckersActivity extends AppCompatActivity {
         }
     }
 
-    // In handleBoardClick, allow unselecting:
-    // In handleBoardClick, check if it's the player's turn before selecting a piece.
     private void handleBoardClick(int row, int col) {
-        // If it's not your turn, do nothing.
+        // If it's not the current player's turn, do nothing.
         if (!myUsername.equals(currentPlayer) || isMoveProcessing) {
             Toast.makeText(this, "Not your turn!", Toast.LENGTH_SHORT).show();
             return;
@@ -168,17 +163,14 @@ public class CheckersActivity extends AppCompatActivity {
         }
     }
 
-    // When highlighting a button, we use our highlightButton() method.
     private void highlightButton(Button btn, boolean highlight) {
         if (isMoveProcessing) {
             return;
         }
 
-        // Get the intended (base) color from cellColors array if available;
-        // otherwise, try to get the color from the current background.
-        int baseColor = 0;
+        int baseColor;
         String cellText = btn.getText().toString().toLowerCase();
-        // Decide background based on cell content and type of square
+
         if (cellText.equals("r")) {
             baseColor = ContextCompat.getColor(CheckersActivity.this, R.color.red);
         } else {
@@ -188,14 +180,14 @@ public class CheckersActivity extends AppCompatActivity {
         if(btn.getBackground() instanceof ColorDrawable) {
             baseColor = ((ColorDrawable) btn.getBackground()).getColor();
         }
-        // Create a drawable to set as background with or without a border
+
         android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
-        gd.setColor(baseColor); // use the cell's base color as fill
+        gd.setColor(baseColor);
         if (highlight) {
-            // Set a yellow border (stroke) of width 5 pixels
+            // Create a stroke for the highlighted cell
             gd.setStroke(5, Color.YELLOW);
         } else {
-            // No border; just use the base color (or reapply the default color for that cell)
+            // No border
             gd.setStroke(0, Color.TRANSPARENT);
         }
         btn.setBackground(gd);
@@ -234,7 +226,7 @@ public class CheckersActivity extends AppCompatActivity {
             if (isValidJump(fromRow, fromCol, toRow, toCol)) {
                 int jumpedRow = (fromRow + toRow) / 2;
                 int jumpedCol = (fromCol + toCol) / 2;
-                board[jumpedRow][jumpedCol].setText(""); // Remove jumped piece
+                board[jumpedRow][jumpedCol].setText(""); // Removes the jumped piece
                 board[jumpedRow][jumpedCol].setBackgroundColor(ContextCompat.getColor(this, R.color.dark_gray)); // Reset square color
 
                 updateBoard(fromRow, fromCol, toRow, toCol);
@@ -250,7 +242,7 @@ public class CheckersActivity extends AppCompatActivity {
     private void updateBoard(int fromRow, int fromCol, int toRow, int toCol) {
         board[toRow][toCol].setText(board[fromRow][fromCol].getText());
         String cellText = board[toRow][toCol].getText().toString().toLowerCase();
-        // Decide background based on cell content and type of square
+
         if (cellText.equals("r")) {
             board[toRow][toCol].setBackgroundColor(ContextCompat.getColor(CheckersActivity.this, R.color.red));
             board[toRow][toCol].setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.black));
@@ -259,18 +251,14 @@ public class CheckersActivity extends AppCompatActivity {
             board[toRow][toCol].setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.white));
         }
 
-        // Clear the old position and update its color
+        // Clears the old position
         board[fromRow][fromCol].setText("");
         board[fromRow][fromCol].setBackgroundColor(ContextCompat.getColor(CheckersActivity.this, R.color.dark_gray));
         board[fromRow][fromCol].setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.black));
 
-        // Optionally update cellColors[toRow][toCol] if needed
-        //cellColors[toRow][toCol] = board[toRow][toCol].getBackground() instanceof ColorDrawable ?
-                //((ColorDrawable) board[toRow][toCol].getBackground()).getColor() : cellColors[toRow][toCol];
-
         // Promote to King if reaching last row
         if (toRow == 0 && board[toRow][toCol].getText().toString().equals("r")) {
-            board[toRow][toCol].setText("R");  // Set to uppercase ONLY for kings
+            board[toRow][toCol].setText("R");
         } else if (toRow == 7 && board[toRow][toCol].getText().toString().equals("b")) {
             board[toRow][toCol].setText("B");
         }
@@ -280,7 +268,7 @@ public class CheckersActivity extends AppCompatActivity {
         int rowDiff = toRow - fromRow;
         int colDiff = toCol - fromCol;
 
-        // Check if the move is exactly two squares diagonally
+        // Check if the move is exactly two squares diagonally, creating a jump
         if (Math.abs(rowDiff) != 2 || Math.abs(colDiff) != 2) {
             return false;
         }
@@ -292,10 +280,9 @@ public class CheckersActivity extends AppCompatActivity {
         String jumpedPiece = board[jumpedRow][jumpedCol].getText().toString();
         String destinationPiece = board[toRow][toCol].getText().toString();
 
-        // Fixed an unintentional bug I discovered
         boolean isKing = Character.isUpperCase(piece.charAt(0));
 
-        // Enforce direction for non-king pieces
+        // Enforces the direction for non-king pieces
         if (!isKing) {
             int direction = piece.equalsIgnoreCase("r") ? 1 : -1;
             if (rowDiff != direction * 2) {
@@ -324,10 +311,9 @@ public class CheckersActivity extends AppCompatActivity {
     private boolean canJump(int row, int col, String piece) {
         if (piece.isEmpty()) return false;
 
-        boolean isKing = Character.isUpperCase(piece.charAt(0)); // Check if king
+        boolean isKing = Character.isUpperCase(piece.charAt(0));
         int direction = (piece.equalsIgnoreCase("r")) ? 1 : -1; // Regular red moves up (-1), black moves down (+1)
 
-        // Define jump moves: Kings move in all directions, regulars only forward
         int[][] jumpMoves = isKing
                 ? new int[][]{{-2, -2}, {-2, 2}, {2, -2}, {2, 2}} // Kings move in all directions
                 : new int[][]{{direction * 2, -2}, {direction * 2, 2}}; // Regular moves forward only
@@ -358,7 +344,7 @@ public class CheckersActivity extends AppCompatActivity {
         }
 
         String piece = board[fromRow][fromCol].getText().toString();
-        boolean isKing = Character.isUpperCase(piece.charAt(0)); // Check if king
+        boolean isKing = Character.isUpperCase(piece.charAt(0));
         int rowDiff = toRow - fromRow;
         int colDiff = toCol - fromCol;
         int direction = (piece.equalsIgnoreCase("r")) ? 1 : -1; // Regular red moves up (-1), black moves down (+1)
@@ -456,7 +442,7 @@ public class CheckersActivity extends AppCompatActivity {
                     int turn = gameState.getTurn();
                     String player1Username = gameState.getPlayer1Username();
                     String player2Username = gameState.getPlayer2Username();
-                    if (!player1Username.equals(myUsername) && !player2Username.equals(myUsername)) {
+                    if ((player1Username == null && isHost) || (player2Username == null && !isHost) || (!Objects.equals(player1Username, myUsername) && !Objects.equals(player2Username, myUsername))) {
                         checkGameStatus(null, null);
                     }
                     isHost = player1Username != null && player1Username.equals(myUsername);
@@ -479,18 +465,19 @@ public class CheckersActivity extends AppCompatActivity {
 
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
-                            board[i][j].setText(boardList.get(i).get(j)); // Preserve lowercase from API
+                            board[i][j].setText(boardList.get(i).get(j));
                         }
                     }
 
-                    // Then update each cell's background color
+                    // This updates each cell's background color
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
                             Button cell = (Button) gameGrid.getChildAt(i * 8 + j);
                             if (cell != null) {
                                 String cellText = board[i][j].getText().toString().toLowerCase();
+
                                 // Decide background based on cell content and type of square
-                                if ((i + j) % 2 == 1) { // dark squares are active
+                                if ((i + j) % 2 == 1) {
                                     if (cellText.equals("r")) {
                                         cell.setBackgroundColor(ContextCompat.getColor(CheckersActivity.this, R.color.red));
                                         cell.setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.black));
@@ -501,10 +488,11 @@ public class CheckersActivity extends AppCompatActivity {
                                         cell.setBackgroundColor(ContextCompat.getColor(CheckersActivity.this, R.color.dark_gray));
                                         cell.setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.black));
                                     }
-                                } else { // light squares are inactive
+                                } else {
                                     cell.setBackgroundColor(ContextCompat.getColor(CheckersActivity.this, R.color.light_grey));
                                     cell.setTextColor(ContextCompat.getColor(CheckersActivity.this, R.color.black));
                                 }
+
                                 // Reapply highlight if this cell is currently selected
                                 if (i == selectedRow && j == selectedCol) {
                                     highlightButton(cell, true);

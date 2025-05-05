@@ -42,14 +42,10 @@ public class LobbyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
 
-        // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(getApplicationContext());
-
-        // Get username from SharedPreferences
         username = prefManager.getUsername();
 
-        // Initialize UI elements
         lobbyStatusText = findViewById(R.id.lobbyStatusText);
         lobbyJoinText = findViewById(R.id.lobbyJoinText);
         lobbyIdText = findViewById(R.id.lobbyIdText);
@@ -59,22 +55,17 @@ public class LobbyActivity extends AppCompatActivity {
         TextView playingAsText = findViewById(R.id.playingAsText);
         TextView gameTypeText = findViewById(R.id.gameTypeText);
 
-        // Get lobby ID
         lobbyId = getIntent().getIntExtra("LOBBY_ID", 0);
         gameType = getIntent().getStringExtra("GAME_TYPE");
         lobbyIdText.setText("Your lobby ID is: " + lobbyId);
 
-        // Set dynamic data
         playingAsText.setText("Playing as " + username);
         gameTypeText.setText("Playing " + gameType);
 
-        // Fetch lobby details
         getLobbyDetails(username);
 
-        // Set up the back button with a confirmation dialog
         backButton.setOnClickListener(v -> showConfirmationDialog());
 
-        // Start periodic lobby update
         startLobbyUpdates(username);
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -85,8 +76,8 @@ public class LobbyActivity extends AppCompatActivity {
                         .setPositiveButton("Exit", (dialog, which) -> {
                             leaveGame();
                             finish();
-                        }) // Exit
-                        .setNegativeButton("Stay", (dialog, which) -> dialog.dismiss()) // Stay
+                        })
+                        .setNegativeButton("Stay", (dialog, which) -> dialog.dismiss())
                         .setCancelable(false)
                         .show();
             }
@@ -102,7 +93,7 @@ public class LobbyActivity extends AppCompatActivity {
                     lobbyStatusText.setText("Lobby Active!");
                     Lobby lobby = response.body();
                     Log.d("LobbyDetails", "Response: " + lobby.toString());
-                    String player1Username = lobby.getPlayer1Username(); // Corrected: Assuming player1Id is correct
+                    String player1Username = lobby.getPlayer1Username();
                     String player2Username = lobby.getPlayer2Username();
 
                     updateLobbyUI(player1Username, player2Username, username);
@@ -114,19 +105,15 @@ public class LobbyActivity extends AppCompatActivity {
                         if (updateLobbyRunnable != null) {
                             handler.removeCallbacks(updateLobbyRunnable);
                         }
-
-                        // Show popup and finish activity
                         showLobbyNotFoundDialog();
                     }
                 } else {
                     lobbyStatusText.setText("Lobby not found!");
 
-                    // Stop handler
                     if (updateLobbyRunnable != null) {
                         handler.removeCallbacks(updateLobbyRunnable);
                     }
 
-                    // Show popup and finish activity
                     showLobbyNotFoundDialog();
                 }
             }
@@ -146,6 +133,7 @@ public class LobbyActivity extends AppCompatActivity {
             // Host's UI: Show waiting for player to join, enable join buttons
             lobbyJoinText.setText("Waiting for player to join...");
             backButton.setVisibility(View.VISIBLE);
+
             // No player joined yet
             if (player2Name != null) {
                 lobbyJoinText.setText("A player has joined!");
@@ -175,7 +163,7 @@ public class LobbyActivity extends AppCompatActivity {
         intent.putExtra("LOBBY_ID", lobbyId);
         intent.putExtra("PLAYER_USERNAME", prefManager.getUsername());
         startActivity(intent);
-        finish(); // Close LobbyActivity
+        finish();
     }
 
     private void showConfirmationDialog() {
@@ -197,7 +185,7 @@ public class LobbyActivity extends AppCompatActivity {
                 .setMessage("The lobby may have been deleted or you lost connection.")
                 .setCancelable(false)
                 .setPositiveButton("OK", (dialog, which) -> {
-                    finish(); // Close the activity
+                    finish();
                 })
                 .show();
     }

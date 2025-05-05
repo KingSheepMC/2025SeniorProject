@@ -24,6 +24,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -38,8 +39,7 @@ public class TicTacToeActivity extends AppCompatActivity {
     private String myUsername;
     private int lobbyId;
     private ApiService apiService;
-    private Button[][] board = new Button[3][3]; // Game board
-
+    private Button[][] board = new Button[3][3];
     private Handler handler = new Handler();
     private Runnable updateLobbyRunnable;
 
@@ -78,7 +78,7 @@ public class TicTacToeActivity extends AppCompatActivity {
     }
 
     private void initializeBoard() {
-        gameGrid.removeAllViews(); // Clear previous views
+        gameGrid.removeAllViews();
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -86,10 +86,8 @@ public class TicTacToeActivity extends AppCompatActivity {
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = 200;
                 params.height = 200;
-                // Load the custom font
                 Typeface customFont = getResources().getFont(R.font.arcade);
 
-                // Set the custom font to the TextView
                 cell.setTypeface(customFont);
                 cell.setLayoutParams(params);
                 cell.setText("");
@@ -151,10 +149,11 @@ public class TicTacToeActivity extends AppCompatActivity {
                     int turn = gameState.getTurn();
                     String player1Username = gameState.getPlayer1Username();
                     String player2Username = gameState.getPlayer2Username();
-
+                    if ((player1Username == null && isHost) || (player2Username == null && !isHost) || (!Objects.equals(player1Username, myUsername) && !Objects.equals(player2Username, myUsername))) {
+                        checkGameStatus(null, null);
+                    }
                     isHost = player1Username != null && player1Username.equals(myUsername);
 
-                    // Determine whose turn it is
                     currentPlayer = (turn == 1) ? player1Username : player2Username;
                     statusText.setText("Current Turn: " + currentPlayer);
                     if (isHost) {
@@ -168,14 +167,12 @@ public class TicTacToeActivity extends AppCompatActivity {
                         currentPlayerText.setText("Waiting for player");
                     }
 
-                    // Convert the JSON game state string into a 2D char array
-                    String gameStateJson = gameState.getGameState(); // Get the JSON string
+                    String gameStateJson = gameState.getGameState();
 
                     Gson gson = new Gson();
                     Type type = new TypeToken<List<List<String>>>() {}.getType();
                     List<List<String>> boardList = gson.fromJson(gameStateJson, type);
 
-                    // Convert List<List<String>> into a 2D char array
                     for (int i = 0; i < 3; i++) {
                         for (int j = 0; j < 3; j++) {
                             String cellValue = boardList.get(i).get(j);
@@ -192,8 +189,7 @@ public class TicTacToeActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<Lobby> call, Throwable t) {
                 Toast.makeText(TicTacToeActivity.this, "Error fetching game state", Toast.LENGTH_SHORT).show();
-                //disableBoard();
-                //showWinPopup("Connection Lost!", "Please check the connection and try again.");
+                checkGameStatus(null, null);
             }
         });
     }

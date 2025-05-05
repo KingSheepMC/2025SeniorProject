@@ -9,7 +9,7 @@ public class RetrofitClient {
     public static Retrofit getClient() {
         if (retrofit == null) {
             retrofit = new Retrofit.Builder()
-                    .baseUrl("http://10.0.2.2:3000/")  // Change to 'http' if your server is not using HTTPS
+                    .baseUrl("http://10.0.2.2:3000/")
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
         }

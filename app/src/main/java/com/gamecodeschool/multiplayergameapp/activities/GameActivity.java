@@ -32,9 +32,6 @@ public class GameActivity extends AppCompatActivity {
     private String gameType;
     private SharedPrefManager prefManager;
     private ApiService apiService;
-    private Handler handler;
-    private Runnable lobbyUpdaterRunnable;
-    private TextView noLobbiesText, fetchingLobbiesText, failedFetchLobbiesText;
     private RecyclerView lobbyRecyclerView;
     private LobbyAdapter lobbyAdapter;
 
@@ -43,46 +40,35 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(getApplicationContext());
-
-        // Get username from SharedPreferences
         String username = prefManager.getUsername();
 
-        // Initialize UI Elements
         TextView gameTypeHeading = findViewById(R.id.gameTypeHeading);
         ImageButton backButton = findViewById(R.id.backButton);
         ImageButton refreshButton = findViewById(R.id.refreshButton);
 
-        refreshButton.setOnClickListener(v -> {
-            fetchLobbies();
-        });
+        refreshButton.setOnClickListener(v -> fetchLobbies());
 
-        // Get the game type from the Intent
         gameType = getIntent().getStringExtra("GAME_TYPE");
-        gameTypeHeading.setText("Play " + gameType); // Set the dynamic heading
+        gameTypeHeading.setText("Play " + gameType);
 
-        // Handle Back Button
         backButton.setOnClickListener(v -> finish());
 
-        // Initialize RecyclerView for lobbies
         lobbyRecyclerView = findViewById(R.id.lobbyRecyclerView);
         lobbyRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         lobbyAdapter = new LobbyAdapter(new ArrayList<>());
         lobbyRecyclerView.setAdapter(lobbyAdapter);
 
-        // Fetch available lobbies
         fetchLobbies();
         deleteUserLobbies(username);
 
-        // Create Lobby button click listener
         findViewById(R.id.createLobbyButton).setOnClickListener(v -> createLobby());
 
     }
 
+    // This makes the user disconnect from current lobbies to prevent a soft lock.
     private void deleteUserLobbies(String username) {
-        // Send a request to the server to delete all lobbies the user is in
         Call<Void> call = apiService.deleteUserLobbies(username);
         call.enqueue(new Callback<Void>() {
             @Override

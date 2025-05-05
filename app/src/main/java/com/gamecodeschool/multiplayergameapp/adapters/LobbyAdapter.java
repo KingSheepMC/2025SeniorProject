@@ -56,9 +56,7 @@ public class LobbyAdapter extends RecyclerView.Adapter<LobbyAdapter.LobbyViewHol
         gameType = lobby.getGameType();
         holder.lobbyInfoTextView.setText("Opponent: " + lobby.getPlayer1Username() + "\n\nLobby ID: " + lobby.getLobbyId());
 
-        // Handle Join Button Click
         holder.joinButton.setOnClickListener(v -> {
-            // Join the lobby by passing the lobby ID
             joinLobby(lobby.getLobbyId());
         });
     }
@@ -74,11 +72,9 @@ public class LobbyAdapter extends RecyclerView.Adapter<LobbyAdapter.LobbyViewHol
     }
 
     private void joinLobby(int lobbyId) {
-        // Initialize Retrofit service
         apiService = RetrofitClient.getClient().create(ApiService.class);
         prefManager = SharedPrefManager.getInstance(context.getApplicationContext());
 
-        // Get username from SharedPreferences
         String username = prefManager.getUsername();
         Call<ResponseBody> call = apiService.joinLobby(lobbyId, username);
         call.enqueue(new Callback<ResponseBody>() {
