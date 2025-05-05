@@ -43,7 +43,7 @@
         android:id="@+id/btnTicTacToe"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Play Tic-Tac-Toe (ready)"
+        android:text="Play Tic-Tac-Toe"
         android:onClick="startTicTacToe"/>
 
     <!-- Play Checkers Button -->
@@ -51,7 +51,7 @@
         android:id="@+id/btnCheckers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Play Checkers (ready)"
+        android:text="Play Checkers"
         android:onClick="startCheckers"
         android:layout_marginTop="10dp"/>
 
@@ -61,6 +61,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Play Chess (in progress)"
+        android:visibility="gone"
         android:onClick="startChess"
         android:layout_marginTop="10dp"/>
 
@@ -81,6 +82,7 @@
         android:layout_height="wrap_content"
         android:text="Play Minesweeper (It's broken)"
         android:onClick="startMinesweeper"
+        android:visibility="gone"
         android:layout_marginTop="10dp"/>
 
 </LinearLayout>
